@@ -8,7 +8,7 @@ const { Post } = require("../models/post.model");
 const { User } = require("../models/user.model");
 require("dotenv").config({ path: `../test.env` });
 
-const { getAllPostByUsername, createNewPost, getAllPost, deletePostById, unlikePost, removeRetweetFromPost, addCommentToPost, removeCommentFromPost } = require('../controllers/post.controller');
+const { getAllPostByUsername, createNewPost, getAllPost, deletePostById, unlikePost, removeRetweetFromPost } = require('../controllers/post.controller');
 
 router.use(async (req, res, next) => {
   const token = req.headers.authorization;
