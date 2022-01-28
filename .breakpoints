@@ -1,0 +1,12 @@
+{
+  "files": {
+    "middlewares/errorHandler.js": [
+      {
+        "id": "c350cf86-2c86-4930-80c1-a77feba0e53b",
+        "line": 1,
+        "version": 3,
+        "index": 0
+      }
+    ]
+  }
+}
