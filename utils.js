@@ -5,4 +5,5 @@ const sendError = (res, message, statusCode = 500) => {
   });
 };
 
+
 module.exports = { sendError };

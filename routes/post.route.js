@@ -11,9 +11,8 @@ require("dotenv").config({ path: `../test.env` });
 const { getAllPostByUsername, createNewPost, getAllPost, deletePostById, unlikePost, removeRetweetFromPost } = require('../controllers/post.controller');
 
 router.use(async (req, res, next) => {
-  const token = req.headers.authorization;
-
   try {
+    const token = req.headers.authorization.split(' ')[1];
     const decode = jwt.verify(token, process.env.SECRET_KEY);
     req.user = decode.userId;
     next();
@@ -34,10 +33,16 @@ router.route("/feed").get(async (req, res, next) => {
       const bufferObj = Buffer.from(cursor, "base64");
       cursor = bufferObj.toString("utf8");
 
-      postList = await Post.find({ userId: { $in: [...userList.following, req.user] }, createdAt: { $lt: cursor }}).sort({ createdAt: -1 }).limit(LIMIT).populate({ path: "userId", select: "username name"}).exec();
+      postList = await Post.find({ userId: { $in: [...userList.following, req.user] }, createdAt: { $lt: cursor }}).sort({ createdAt: -1 }).limit(LIMIT).populate({ path: "userId", select: "username name photo"}).populate({ path: "retweet", select: "username name photo"}).populate({ path: "comments", populate: {
+        path: "commentOwner",
+        model: "User"
+      }}).exec();
 
     } else {
-      postList = await Post.find({ userId: { $in: [...userList.following, req.user] }}).sort({ createdAt: -1}).limit(LIMIT).populate({ path: "userId", select: "username name" }).exec();
+      postList = await Post.find({ userId: { $in: [...userList.following, req.user] }}).sort({ createdAt: -1}).limit(LIMIT).populate({ path: "userId", select: "username name photo" }).populate({ path: "retweet", select: "username name photo"}).populate({ path: "comments", populate: {
+        path: "commentOwner",
+        select: "username name photo"
+      }}).exec();
     }
 
     const hasMore = postList.length === LIMIT;
@@ -162,7 +167,6 @@ router.route("/retweet/:postId").post(async (req, res, next) => {
 
     const reqdPost = await Post.findById(postId).exec();
     reqdPost.retweet.push(userId);
-
     await reqdPost.save();
 
     const populatePost = await Post.findById(postId).populate({
@@ -209,11 +213,18 @@ router.route("/addcomment/:postId").post(async (req, res, next) => {
     const userId = mongoose.Types.ObjectId(req.user);
     const { comment } = req.body;
     
-    const reqdPost = await Post.findOne({ _id: postId }).exec();
+    let reqdPost = await Post.findOne({ _id: postId }).exec();
     const commentOwner = userId;
 
     reqdPost.comments.push({ comment, commentOwner, upvote:[], downvote:[] })
     await reqdPost.save();
+
+    console.log("1",{ reqdPost });
+    reqdPost = await Post.findOne({ _id: postId }).populate({ path: "comments", populate: {
+        path: "commentOwner",
+        model: "User"
+    }}).exec();
+    console.log("2",{ reqdPost });
 
     const reqdPostOwnerId = await Post.findById(postId).select("userId").exec();
 
@@ -229,6 +240,7 @@ router.route("/addcomment/:postId").post(async (req, res, next) => {
     return res.status(200).json({
       success: true,
       comment: reqdPost.comments[reqdPost.comments.length - 1],
+      postId
     })
     
   } catch(error) {

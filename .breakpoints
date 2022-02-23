@@ -7,6 +7,22 @@
         "version": 3,
         "index": 0
       }
+    ],
+    "models/post.model.js": [
+      {
+        "id": "1178761b-09fb-4281-b492-d71ff97a8405",
+        "line": 24,
+        "version": 398,
+        "index": 338
+      }
+    ],
+    "models/user.model.js": [
+      {
+        "id": "5b19263a-c878-44f0-bdc9-cb7aecd193a9",
+        "line": 52,
+        "version": 19,
+        "index": 924
+      }
     ]
   }
 }
