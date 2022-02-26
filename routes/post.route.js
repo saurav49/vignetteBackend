@@ -282,10 +282,27 @@ router.route("/comment/upvote/:postId").post( async (req, res, next) => {
       await Post.updateOne({ 'comments._id': commentId }, { $pull: { 'comments.$.downvote': userId }}).exec();
     }
 
-    if(alreadyUpvoted) return res.status(409).json({
-      success: false,
-      message: 'already upvoted'
-    });
+    if(alreadyUpvoted) {
+      await Post.updateOne({ 'comments._id': commentId }, { $pull: { 'comments.$.upvote': userId }}).exec();
+
+      const reqdPostOwnerId = await Post.findById(postId).select("userId").exec();
+      if(reqdPostOwnerId.userId.toString() !== userId.toString()) {
+        const owner = reqdPostOwnerId.userId;
+        const actionType = "UPVOTE";
+        const actionOwner = req.user;
+  
+        const newNotification = new Notification({ owner, actionOwner, actionType, postId });
+        await newNotification.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        upvoteUserId: userId,
+        postId,
+        commentId,
+        type: "UPVOTE_REMOVED"
+      })
+    }
 
     await Post.updateOne({ 'comments._id': commentId }, { $push: { 'comments.$.upvote': userId } }).exec();
 
@@ -304,6 +321,7 @@ router.route("/comment/upvote/:postId").post( async (req, res, next) => {
       upvoteUserId: userId,
       postId,
       commentId,
+      type: "UPVOTE_ADDED"
     })
   } catch(error) {
     return sendError(res, error.message);
@@ -323,18 +341,46 @@ router.route("/comment/downvote/:postId").post( async (req, res, next) => {
       await Post.updateOne({ 'comments._id': commentId }, { $pull: { 'comments.$.upvote': userId } }).exec();
     } 
 
-    if(alreadyDownvoted) return res.status(409).json({
-      success: false,
-      message: 'already downvoted'
-    });;
+    if(alreadyDownvoted) {
+      await Post.updateOne({ 'comments._id': commentId }, { $pull: { 'comments.$.downvote': userId } }).exec();
+
+      const reqdPostOwnerId = await Post.findById(postId).select("userId").exec();
+      if(reqdPostOwnerId.userId.toString() !== userId.toString()) {
+        const owner = reqdPostOwnerId.userId;
+        const actionType = "DOWNVOTE";
+        const actionOwner = req.user;
+  
+        const newNotification = new Notification({ owner, actionOwner, actionType, postId });
+        await newNotification.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        downvoteUserId: userId,
+        postId,
+        commentId,
+        type: "DOWNVOTE_REMOVED"
+      })
+    }
 
     await Post.updateOne({ 'comments._id': commentId }, { $push: { 'comments.$.downvote': userId } }).exec();
+
+    const reqdPostOwnerId = await Post.findById(postId).select("userId").exec();
+    if(reqdPostOwnerId.userId.toString() !== userId.toString()) {
+      const owner = reqdPostOwnerId.userId;
+      const actionType = "DOWNVOTE";
+      const actionOwner = req.user;
+
+      const newNotification = new Notification({ owner, actionOwner, actionType, postId });
+      await newNotification.save();
+    }
 
     return res.status(200).json({
       success: true,
       downvoteUserId: userId,
       postId,
       commentId,
+      type: "DOWNVOTE_ADDED"
     })
   } catch(error) {
     return sendError(res, error.message);

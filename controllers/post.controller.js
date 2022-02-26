@@ -83,6 +83,7 @@ const deletePostById = async (res, postId) => {
     return res.status(202).json({
       success: true,
       deletedPost,
+      postId,
     });
   } catch(error) {
     sendError(res, error.message);    

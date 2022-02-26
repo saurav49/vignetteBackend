@@ -85,7 +85,7 @@ router.route("/getuser").get(async (req, res, next) => {
   }
 })
 
-router.route("/followuser/:username").post(async (req, res, next) => {
+router.route("/followuser/:username").get(async (req, res, next) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
     const decode = jwt.verify(token, process.env.SECRET_KEY);
