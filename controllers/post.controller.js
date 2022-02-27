@@ -35,7 +35,7 @@ const createNewPost = async (res, userId, text) => {
 
     const populateNewPost = await newPost.populate({
       path: "userId",
-      select: "name username",
+      select: "name username photo",
     });
 
     return res.status(200).json({
