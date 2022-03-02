@@ -36,6 +36,11 @@ const userSchema = new Schema(
       maxLength: [280, "Bio should be under 280 characters"],
     },
 
+    website: {
+      type: String,
+      trim: true,
+    },
+
     photo: {
       id: {
         type: String,

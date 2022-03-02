@@ -19,9 +19,9 @@
     "models/user.model.js": [
       {
         "id": "5b19263a-c878-44f0-bdc9-cb7aecd193a9",
-        "line": 52,
-        "version": 19,
-        "index": 924
+        "line": 57,
+        "version": 74,
+        "index": 985
       }
     ]
   }

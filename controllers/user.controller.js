@@ -42,7 +42,7 @@ const loginUser = async () => {};
 
 const findByEmail = async (res, email) => {
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate({ path:"following followers", select:"name username photo" });
     return user;
   } catch (error) {
     console.log(error);
@@ -95,4 +95,19 @@ const unfollowUser = async (req, res, currentUser, reqdUser) => {
   }
 }
 
-module.exports = { saveUser, loginUser, findByEmail, followUser, unfollowUser };
+const editUserProfile = async(res, itemsToBeUpdated, userId) => {
+  try {
+    const reqdUser = await User.findOne({ _id: userId }).exec();
+    if(!reqdUser) return res.status(404).json({ success: false, errorMessage: "user not found" });
+    const filter = { _id: userId };
+    const update = itemsToBeUpdated;
+    
+    const updatedDoc = await User.findOneAndUpdate(filter, update, { new: true }).exec();
+
+    return res.status(200).json({ success: true, updatedDoc });
+  } catch(error) {
+    return sendError(res, error.message);
+  }
+}
+
+module.exports = { saveUser, loginUser, findByEmail, followUser, unfollowUser, editUserProfile };
