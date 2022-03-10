@@ -86,8 +86,11 @@ router.route("/getuser").get(async (req, res, next) => {
 
 router.route("/followuser/:username").get(async (req, res, next) => {
   try {
+    const token = req.headers.authorization.split(' ')[1];
+    const decode = jwt.verify(token, process.env.SECRET_KEY);
+    req.user = decode.userId;
     const { username } = req.params;
-    const reqdUser = await User.findOne({ username })
+    const reqdUser = await User.findOne({ username });
     const currentUser = await User.findOne({ _id: req.user });
 
     followUser(req, res, currentUser, reqdUser);
