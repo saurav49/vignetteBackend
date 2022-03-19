@@ -6,8 +6,8 @@ const { connectToDb } = require("./db/db.connect");
 
 const app = express();
 
-app.use(bodyParser.json({ limit: "50mb" }));
 app.use(cors());
+app.use(bodyParser.json({ limit: "50mb" }));
 
 connectToDb();
 

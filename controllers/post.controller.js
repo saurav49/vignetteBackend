@@ -1,5 +1,6 @@
 const { Post } = require('../models/post.model.js');
 const { sendError } = require("../utils");
+const { cloudinary } = require("../db/db.connect");
 
 const getAllPostByUsername = async (res, userId) => {
   try {
@@ -28,10 +29,22 @@ const getAllPostByUsername = async (res, userId) => {
 
 }
 
-const createNewPost = async (res, userId, text) => {
+const createNewPost = async (res, userId, post) => {
   try {
-    const newPost = new Post({ userId, text });
-    await newPost.save();
+    let imageUploadResult, newPost;
+
+    if(post.previewPostImage) {
+      imageUploadResult = await cloudinary.uploader.upload(post.previewPostImage, { folder: "posts" });
+    }
+
+    if(imageUploadResult) {
+      newPost = new Post({ userId, text: post.postContent, postPhoto: { id:    
+      imageUploadResult.public_id,
+      secure_url: imageUploadResult.secure_url } });
+    } else {
+      newPost = new Post({ userId, text: post.postContent });
+    }
+      await newPost.save();
 
     const populateNewPost = await newPost.populate({
       path: "userId",

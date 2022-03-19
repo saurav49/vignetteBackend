@@ -27,19 +27,21 @@ router.route("/feed").get(async (req, res, next) => {
     let postList;
     // DECODING CURSOR
     let cursor = req.query.cursor;
-    const userList = await User.findOne({ _id: req.user }, "following").exec();
-
+    const user = await User.findOne({ _id: req.user }).exec();
+    let userList = [user._id].concat(user.following);
+    userList = userList.map(user=> mongoose.Types.ObjectId(user));
+    
     if(cursor) {
       const bufferObj = Buffer.from(cursor, "base64");
       cursor = bufferObj.toString("utf8");
 
-      postList = await Post.find({ userId: { $in: [...userList.following, req.user] }, createdAt: { $lt: cursor }}).sort({ createdAt: -1 }).limit(LIMIT).populate({ path: "userId", select: "username name photo"}).populate({ path: "retweet", select: "username name photo"}).populate({ path: "comments", populate: {
+      postList = await Post.find({ "userId": { $in: userList }, "createdAt": { $lt: cursor }}).sort({ createdAt: -1 }).limit(LIMIT).populate({ path: "userId", select: "username name photo"}).populate({ path: "retweet", select: "username name photo"}).populate({ path: "comments", populate: {
         path: "commentOwner",
         model: "User"
       }}).exec();
 
     } else {
-      postList = await Post.find({ userId: { $in: [...userList.following, req.user] }}).sort({ createdAt: -1}).limit(LIMIT).populate({ path: "userId", select: "username name photo" }).populate({ path: "retweet", select: "username name photo"}).populate({ path: "comments", populate: {
+      postList = await Post.find({ "userId": { $in: userList }}).sort({ createdAt: -1}).limit(LIMIT).populate({ path: "userId", select: "username name photo" }).populate({ path: "retweet", select: "username name photo"}).populate({ path: "comments", populate: {
         path: "commentOwner",
         select: "username name photo"
       }}).exec();
@@ -84,9 +86,9 @@ router
   .post(async (req, res, next) => {
     try {
       const userId = req.user;
-      const { text } = req.body;
-
-      createNewPost(res, userId, text);
+      const post = req.body;
+      
+      createNewPost(res, userId, post);
     } catch (error) {
       sendError(res, error.message);
     }
@@ -219,12 +221,10 @@ router.route("/addcomment/:postId").post(async (req, res, next) => {
     reqdPost.comments.push({ comment, commentOwner, upvote:[], downvote:[] })
     await reqdPost.save();
 
-    console.log("1",{ reqdPost });
     reqdPost = await Post.findOne({ _id: postId }).populate({ path: "comments", populate: {
         path: "commentOwner",
         model: "User"
     }}).exec();
-    console.log("2",{ reqdPost });
 
     const reqdPostOwnerId = await Post.findById(postId).select("userId").exec();
 
@@ -251,18 +251,16 @@ router.route("/addcomment/:postId").post(async (req, res, next) => {
 router.route("/removecomment/:postId").post( async (req, res, next) => {
   try {
     const { postId } = req.params;
-    const userId = req.user;
     const { commentId } = req.body;
 
-    const reqdPost = await Post.findOne({ _id: postId }).exec();
+    const reqdPost = await Post.findOne({ _id: mongoose.Types.ObjectId(postId) }).exec();
     reqdPost.comments.pull({ commentOwner: commentId });
-
     await reqdPost.save();
 
     return res.status(200).json({
       success: true,
       postId,
-      userId
+      commentId
     })
   } catch(error) {
     return sendError(res, error.message);
@@ -275,9 +273,17 @@ router.route("/comment/upvote/:postId").post( async (req, res, next) => {
     const commentId = mongoose.Types.ObjectId(req.body.commentId);
     const userId = req.user;
 
-    const alreadyDownvoted = await Post.findOne({ 'comments.downvote': userId }).exec();
-    const alreadyUpvoted = await Post.findOne({ 'comments.upvote': userId }).exec();
+    let alreadyUpvoted, alreadyDownvoted;
+    const reqdPost = await Post.findOne({ _id: postId }).exec();
 
+    const reqdComment = reqdPost.comments.filter(comment=>(comment._id).toString()===commentId.toString());
+    if(reqdComment[0].upvote.length > 0) {
+      alreadyUpvoted = reqdComment[0].upvote.find(id=>id.toString()==userId.toString())!=undefined
+    }
+    if(reqdComment[0].downvote.length > 0){
+      alreadyDownvoted = reqdComment[0].downvote.find(id=>id.toString()==userId.toString())!=undefined
+    }
+        
     if(alreadyDownvoted) {
       await Post.updateOne({ 'comments._id': commentId }, { $pull: { 'comments.$.downvote': userId }}).exec();
     }
@@ -334,8 +340,16 @@ router.route("/comment/downvote/:postId").post( async (req, res, next) => {
     const userId = req.user;
     const { commentId } = req.body;
 
-    const alreadyDownvoted = await Post.findOne({ 'comments.downvote': userId }).exec();
-    const alreadyUpvoted = await Post.findOne({ 'comments.upvote': userId }).exec();
+    let alreadyUpvoted, alreadyDownvoted;
+    const reqdPost = await Post.findOne({ _id: postId }).exec();
+
+    const reqdComment = reqdPost.comments.filter(comment=>(comment._id).toString()===commentId.toString());
+    if(reqdComment[0].upvote.length > 0) {
+      alreadyUpvoted = reqdComment[0].upvote.find(id=>id.toString()==userId.toString())!=undefined
+    }
+    if(reqdComment[0].downvote.length > 0){
+      alreadyDownvoted = reqdComment[0].downvote.find(id=>id.toString()==userId.toString())!=undefined
+    }
 
     if(alreadyUpvoted) {
       await Post.updateOne({ 'comments._id': commentId }, { $pull: { 'comments.$.upvote': userId } }).exec();

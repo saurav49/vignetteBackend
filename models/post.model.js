@@ -13,6 +13,15 @@ const postSchema = new Schema({
     required: "Text is Required",
   },
 
+  postPhoto: {
+      id: {
+        type: String,
+      },
+      secure_url: {
+        type: String,
+      },
+  },
+
   likes: [
     {
       type: Schema.Types.ObjectId,

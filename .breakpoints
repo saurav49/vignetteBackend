@@ -11,9 +11,9 @@
     "models/post.model.js": [
       {
         "id": "1178761b-09fb-4281-b492-d71ff97a8405",
-        "line": 24,
-        "version": 398,
-        "index": 338
+        "line": 33,
+        "version": 409,
+        "index": 453
       }
     ],
     "models/user.model.js": [

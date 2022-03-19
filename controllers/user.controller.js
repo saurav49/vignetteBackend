@@ -100,11 +100,20 @@ const editUserProfile = async(res, itemsToBeUpdated, userId) => {
     const reqdUser = await User.findOne({ _id: userId }).exec();
     if(!reqdUser) return res.status(404).json({ success: false, errorMessage: "user not found" });
     const filter = { _id: userId };
-    const update = itemsToBeUpdated;
+    let update = itemsToBeUpdated; 
+    let imageUploadResult;
+    
+    if(itemsToBeUpdated.photo) {
+      imageUploadResult = await cloudinary.uploader.upload(itemsToBeUpdated.photo, { folder: "users"});
+    }
+    if(imageUploadResult) {
+      update = {...itemsToBeUpdated, photo: { id: imageUploadResult.public_id, secure_url: imageUploadResult.secure_url}};
+    }
     
     const updatedDoc = await User.findOneAndUpdate(filter, update, { new: true }).exec();
-
-    return res.status(200).json({ success: true, updatedDoc });
+    
+    return res.status(200).json({ success: true, updatedDoc, photo: { id: updatedDoc.photo.id, secure_url: updatedDoc.photo.secure_url } });
+    
   } catch(error) {
     return sendError(res, error.message);
   }

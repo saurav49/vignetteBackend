@@ -141,7 +141,6 @@ router.route("/getalluser").get(async (req, res, next)=>{
     const decode = jwt.verify(token, process.env.SECRET_KEY);
     req.user = decode.userId;
     let allUsers = await User.find({});
-    allUsers = allUsers.filter(user => user._id.toString() !== req.user);
     return res.status(200).json({
       success: true,
       allUsers,
